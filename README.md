@@ -7,6 +7,7 @@ This project is developed as part of the course **CS218 – Programmable and Int
 The objective of this project is to design and implement a **Multi-Signature Wallet (MultiSig)** smart contract using Solidity and the Foundry framework. The system allows multiple owners to jointly control funds by enforcing an approval threshold mechanism.
 
 Each transaction must be approved by at least **M out of N registered owners** before execution. This approach enhances security, enforces decentralized decision-making, and mitigates risks such as single point of failure or unauthorized fund transfers.
+
 ---
 
 ## Team Members (412)
