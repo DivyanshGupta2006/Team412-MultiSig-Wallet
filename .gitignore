@@ -7,7 +7,7 @@ cache/
 out/
 
 # Ignores development broadcast logs
-!/broadcast
+/broadcast
 /broadcast/*/31337/
 /broadcast/**/dry-run/
 
@@ -16,3 +16,16 @@ docs/
 
 # Dotenv file
 .env
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+yarn-debug.log
+package-lock.json
+
+# Vite / React Frontend Build
+frontend/dist/
+frontend/dist-ssr/
+frontend/*.local
+frontend/.eslintcache
