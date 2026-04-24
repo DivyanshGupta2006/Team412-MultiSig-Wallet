@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 
-export const CONTRACT_ADDRESS = "0x7cbC1b35f7Eb585929867CA400Dc0fE4F445DF04"; // Deployed on Sepolia
+export const CONTRACT_ADDRESS = "0x151f600443727c66Dc353d70777eede47E75ce6e"; // Deployed on Sepolia
 
 export const CONTRACT_ABI = [
   "constructor(address[] _owners, uint256 _requiredApprovals)",
