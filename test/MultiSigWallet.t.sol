@@ -61,10 +61,6 @@ contract MultiSigWalletTest is Test {
         wallet.approveTransaction(txId);
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  1. CONSTRUCTOR & INITIALIZATION
-    // ═══════════════════════════════════════════════════════
-
     function test_constructor_setsStateCorrectly() public view {
         address[] memory o = wallet.getOwners();
         assertEq(o.length, 3);
@@ -107,10 +103,6 @@ contract MultiSigWalletTest is Test {
         new MultiSigWallet(owners, 4);
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  2. ACCESS CONTROL (non-owner reverts)
-    // ═══════════════════════════════════════════════════════
-
     function test_submitTransaction_revertsForNonOwner() public {
         vm.prank(nonOwner);
         vm.expectRevert(MultiSigWallet.NotOwner.selector);
@@ -141,10 +133,6 @@ contract MultiSigWalletTest is Test {
         wallet.revokeApproval(0);
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  3. SUBMIT TRANSACTION
-    // ═══════════════════════════════════════════════════════
-
     function test_submitTransaction_storesCorrectFields() public {
         bytes memory data = abi.encodeWithSelector(MockTarget.setValue.selector, 42);
         vm.prank(owner1);
@@ -167,10 +155,6 @@ contract MultiSigWalletTest is Test {
         vm.prank(owner1);
         wallet.submitTransaction(address(target), 1 ether, data);
     }
-
-    // ═══════════════════════════════════════════════════════
-    //  4. APPROVE TRANSACTION
-    // ═══════════════════════════════════════════════════════
 
     function test_approveTransaction_updatesState() public {
         _submitDummyTx();
@@ -214,10 +198,6 @@ contract MultiSigWalletTest is Test {
         vm.expectRevert(MultiSigWallet.TxAlreadyApproved.selector);
         wallet.approveTransaction(0);
     }
-
-    // ═══════════════════════════════════════════════════════
-    //  5. EXECUTE TRANSACTION
-    // ═══════════════════════════════════════════════════════
 
     function test_executeTransaction_transfersEth() public {
         address payable recipient = payable(makeAddr("recipient"));
@@ -287,10 +267,6 @@ contract MultiSigWalletTest is Test {
         wallet.executeTransaction(txId);
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  6. REVOKE APPROVAL
-    // ═══════════════════════════════════════════════════════
-
     function test_revokeApproval_decrementsCountAndUpdatesMapping() public {
         _submitDummyTx();
         vm.prank(owner1);
@@ -332,14 +308,12 @@ contract MultiSigWalletTest is Test {
     function test_revokeApproval_blocksExecutionUntilReApproved() public {
         _submitDummyTx();
         _approveByTwo(0);
-        // Revoke drops below threshold
         vm.prank(owner1);
         wallet.revokeApproval(0);
         vm.prank(owner1);
         vm.expectRevert(MultiSigWallet.InsufficientApprovals.selector);
         wallet.executeTransaction(0);
 
-        // Re-approve restores threshold
         vm.prank(owner1);
         wallet.approveTransaction(0);
         vm.prank(owner1);
@@ -347,10 +321,6 @@ contract MultiSigWalletTest is Test {
         (, , , bool executed, ) = wallet.getTransaction(0);
         assertTrue(executed);
     }
-
-    // ═══════════════════════════════════════════════════════
-    //  7. RECEIVE / DEPOSIT
-    // ═══════════════════════════════════════════════════════
 
     function test_receive_acceptsEthAndEmitsDeposit() public {
         vm.deal(nonOwner, 5 ether);
@@ -362,29 +332,20 @@ contract MultiSigWalletTest is Test {
         assertEq(address(wallet).balance, INITIAL_BALANCE + 5 ether);
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  8. END-TO-END HAPPY PATH
-    // ═══════════════════════════════════════════════════════
-
     function test_fullHappyPath_endToEnd() public {
-        // Submit a calldata tx that sends ETH and sets value on MockTarget
         bytes memory data = abi.encodeWithSelector(MockTarget.setValue.selector, 777);
         vm.prank(owner1);
         uint256 txId = wallet.submitTransaction(address(target), 1 ether, data);
 
-        // Owner1 approves
         vm.prank(owner1);
         wallet.approveTransaction(txId);
 
-        // Owner2 approves (meets 2-of-3 threshold)
         vm.prank(owner2);
         wallet.approveTransaction(txId);
 
-        // Owner3 executes
         vm.prank(owner3);
         wallet.executeTransaction(txId);
 
-        // Verify target state changed
         assertEq(target.value(), 777);
         assertEq(target.lastMsgValue(), 1 ether);
         (, , , bool executed, uint256 approvalCount) = wallet.getTransaction(txId);
