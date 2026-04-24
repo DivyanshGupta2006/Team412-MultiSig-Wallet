@@ -20,8 +20,25 @@
 
 ### Prerequisites
 
-- [Foundry](https://book.getfoundry.sh/getting-started/installation) (forge, cast, anvil)
-- Git
+* Git installed
+* MetaMask browser extension
+* Basic familiarity with terminal/command line
+
+---
+
+# Installation Guide
+
+---
+
+## 1. Linux
+
+### Install Dependencies
+
+```bash
+sudo pacman -S git curl   # Arch / CachyOS
+# OR
+sudo apt update && sudo apt install git curl   # Ubuntu/Debian
+```
 
 ### Clone & Install
 
