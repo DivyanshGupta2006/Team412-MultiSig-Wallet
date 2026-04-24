@@ -47,7 +47,7 @@ Each transaction must be approved by at least **M out of N registered owners** b
 
 ---
 
-## 1. Linux (CachyOS / Arch / Ubuntu)
+## 1. Linux
 
 ### Install Dependencies
 
