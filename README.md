@@ -92,19 +92,22 @@ The contract implements:
 ---
 
 ## Project Structure
+
+```
 ├── src/
-│ └── MultiSigWallet.sol
+│   └── MultiSigWallet.sol
 ├── test/
-│ └── MultiSigWallet.t.sol
+│   └── MultiSigWallet.t.sol
 ├── script/
-│ └── Deploy.s.sol
+│   └── Deploy.s.sol
 ├── docs/
-│ └── MultiSigWallet_Explained.md
+│   └── MultiSigWallet_Explained.md
 ├── lib/
-│ ├── forge-std/
-│ └── openzeppelin-contracts/
+│   ├── forge-std/
+│   └── openzeppelin-contracts/
 ├── foundry.toml
 └── README.md
+```
 
 ---
 
