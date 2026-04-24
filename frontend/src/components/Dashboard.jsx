@@ -44,6 +44,7 @@ const Dashboard = ({ account, contract, provider, disconnectWallet }) => {
           to: tx.to,
           value: tx.value,
           data: tx.data,
+          description: tx.description,
           executed: tx.executed,
           approvalCount: tx.approvalCount,
           hasApproved

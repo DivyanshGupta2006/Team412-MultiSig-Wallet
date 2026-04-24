@@ -21,7 +21,8 @@ contract MultiSigWallet is ReentrancyGuard {
         uint256 indexed txId,
         address indexed to,
         uint256 value,
-        bytes data
+        bytes data,
+        string description
     );
     
     event ApproveTransaction(address indexed owner, uint256 indexed txId);
@@ -32,6 +33,7 @@ contract MultiSigWallet is ReentrancyGuard {
         address to;
         uint256 value;
         bytes data;
+        string description;
         bool executed;
         uint256 approvalCount;
     }
@@ -90,7 +92,8 @@ contract MultiSigWallet is ReentrancyGuard {
     function submitTransaction(
         address _to,
         uint256 _value,
-        bytes memory _data
+        bytes memory _data,
+        string memory _description
     ) public onlyOwner returns (uint256 txId) {
         txId = transactions.length;
 
@@ -99,12 +102,13 @@ contract MultiSigWallet is ReentrancyGuard {
                 to: _to,
                 value: _value,
                 data: _data,
+                description: _description,
                 executed: false,
                 approvalCount: 0
             })
         );
 
-        emit SubmitTransaction(msg.sender, txId, _to, _value, _data);
+        emit SubmitTransaction(msg.sender, txId, _to, _value, _data, _description);
     }
 
     function approveTransaction(
@@ -175,6 +179,7 @@ contract MultiSigWallet is ReentrancyGuard {
             address to,
             uint256 value,
             bytes memory data,
+            string memory description,
             bool executed,
             uint256 approvalCount
         )
@@ -185,6 +190,7 @@ contract MultiSigWallet is ReentrancyGuard {
             txn.to,
             txn.value,
             txn.data,
+            txn.description,
             txn.executed,
             txn.approvalCount
         );

@@ -59,6 +59,15 @@ const TransactionList = ({ transactions, contract, account, fetchTransactions, i
             </span>
           </div>
           
+          {tx.description && (
+            <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(0, 229, 255, 0.05)', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid var(--color-secondary)' }}>
+              <p style={{ margin: 0, color: '#fff', fontSize: '1.05rem', lineHeight: '1.5' }}>
+                <strong style={{ color: 'var(--color-secondary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: '0.25rem' }}>Proposal Description</strong>
+                {tx.description}
+              </p>
+            </div>
+          )}
+          
           <div className="data-grid">
             <div className="data-col">
               <span className="data-lbl">Target Address</span>

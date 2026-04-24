@@ -4,13 +4,14 @@ import { ethers } from 'ethers';
 const SubmitTransaction = ({ contract, fetchTransactions }) => {
   const [to, setTo] = useState('');
   const [value, setValue] = useState('');
+  const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!to || !value) {
-      setError('Recipient and Amount are required.');
+    if (!to || !value || !description) {
+      setError('Recipient, Amount, and Description are required.');
       return;
     }
 
@@ -21,11 +22,12 @@ const SubmitTransaction = ({ contract, fetchTransactions }) => {
       const parsedValue = ethers.parseEther(value);
       const parsedData = '0x';
 
-      const tx = await contract.submitTransaction(to, parsedValue, parsedData);
+      const tx = await contract.submitTransaction(to, parsedValue, parsedData, description);
       await tx.wait();
       
       setTo('');
       setValue('');
+      setDescription('');
       
       if (fetchTransactions) {
         await fetchTransactions();
@@ -82,6 +84,17 @@ const SubmitTransaction = ({ contract, fetchTransactions }) => {
             placeholder="0.00" 
             value={value} 
             onChange={(e) => setValue(e.target.value)} 
+          />
+        </div>
+        
+        <div className="form-group">
+          <label className="form-label">Proposal Description</label>
+          <input 
+            type="text" 
+            className="form-input" 
+            placeholder="e.g. Q3 Marketing Budget" 
+            value={description} 
+            onChange={(e) => setDescription(e.target.value)} 
           />
         </div>
         
