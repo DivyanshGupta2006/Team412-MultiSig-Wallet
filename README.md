@@ -1,185 +1,124 @@
-# Multi-Signature Wallet 
+# MultiSig Wallet
 
-## Project Overview
+> A multi-signature wallet smart contract built with **Foundry** and **OpenZeppelin v5.6.1**.
+> Requires M-of-N owner approvals before any transaction can be executed.
 
-This project is developed as part of the course **CS218 – Programmable and Interoperable Blockchain**, instructed by **Mrs. Subhra Mazumdar**.
+## Team
 
-The objective of this project is to design and implement a **Multi-Signature Wallet (MultiSig)** smart contract using Solidity and the Foundry framework. The system allows multiple owners to jointly control funds by enforcing an approval threshold mechanism.
-
-Each transaction must be approved by at least **M out of N registered owners** before execution. This approach enhances security, enforces decentralized decision-making, and mitigates risks such as single point of failure or unauthorized fund transfers.
-
----
-
-## Team Members (412)
-
-| Name      | Roll Number |
-| --------- | ----------- |
-| Harsh Mahajan | 240001034 |
-| Akarsh J | 240002007 |
-| Hardik Hazari | 240003032  |
-| Darsh Chaudhary  | 240004014 |
-| Shashvat Sharma | 240005043 |
-| Aayush Sharma | 240041001 |
-| Divyansh Gupta | 240041015 |
+| Name | Roll Number |
+|------|-------------|
+| *Akarsh J* | *(Add roll number)* |
+| *Aayush Sharma* | *(Add roll number)* |
+| *Darsh Chaudhary* | *(Add roll number)* |
+| *Divyansh Gupta* | *(Add roll number)* |
+| *Hardik Hazari* | *(Add roll number)* |
+| *Harsh Mahajan* | *(Add roll number)* |
 
 ---
 
-## Tech Stack
-
-* Solidity (Smart Contracts)
-* Foundry (Testing, Build, Gas Report)
-* MetaMask (Wallet Interaction)
-* IPFS (for optional off-chain storage)
-
----
-
-## Setup Instructions
+## Setup & Installation
 
 ### Prerequisites
 
-* Git installed
-* MetaMask browser extension
-* Basic familiarity with terminal/command line
+- [Foundry](https://book.getfoundry.sh/getting-started/installation) (forge, cast, anvil)
+- Git
 
----
-
-# Installation Guide
-
----
-
-## 1. Linux (CachyOS / Arch / Ubuntu)
-
-### Install Dependencies
+### Clone & Install
 
 ```bash
-sudo pacman -S git curl   # Arch / CachyOS
-# OR
-sudo apt update && sudo apt install git curl   # Ubuntu/Debian
-```
-
-### Install Foundry
-
-```bash
-curl -L https://foundry.paradigm.xyz | bash
-source ~/.bashrc   # or ~/.zshrc
-foundryup
-```
-
----
-
-## 2. macOS
-
-### Install Dependencies (via Homebrew)
-
-```bash
-brew install git curl
-```
-
-### Install Foundry
-
-```bash
-curl -L https://foundry.paradigm.xyz | bash
-source ~/.zshrc
-foundryup
-```
-
----
-
-## 3. Windows
-
-### Option A (Recommended: WSL)
-
-1. Install WSL:
-
-```powershell
-wsl --install
-```
-
-2. Open Ubuntu (WSL terminal), then run:
-
-```bash
-sudo apt update && sudo apt install git curl
-curl -L https://foundry.paradigm.xyz | bash
-source ~/.bashrc
-foundryup
-```
-
----
-
-### Option B (Native Windows - Not Recommended)
-
-Use Git Bash or PowerShell:
-
-```bash
-curl -L https://foundry.paradigm.xyz | bash
-foundryup
-```
-
----
-
-# Project Setup
-
-### Clone Repository
-
-```bash
-git clone <your-repo-link>
-cd project-10-multisig-wallet
-```
-
----
-
-### Install Dependencies
-
-```bash
+git clone <repository-url>
+cd Team412-MultiSig-Wallet
 forge install
 ```
 
----
-
-### Build Contracts
+### Compile
 
 ```bash
 forge build
 ```
 
----
-
 ### Run Tests
 
 ```bash
-forge test
-```
+# Run all tests with verbose output
+forge test -vvv
 
----
-
-### Generate Gas Report
-
-```bash
+# Run with gas report
 forge test --gas-report
-```
 
----
-
-### Generate Coverage Report
-
-```bash
+# Run coverage report
 forge coverage
 ```
 
----
-
-### Deploy Contract (Example)
+### Deploy
 
 ```bash
-forge script script/Deploy.s.sol --rpc-url <RPC_URL> --private-key <PRIVATE_KEY> --broadcast
+# Local deployment (Anvil)
+anvil &
+forge script script/deploy.s.sol:DeployMultiSigWallet \
+    --rpc-url http://127.0.0.1:8545 \
+    --broadcast --private-key <DEPLOYER_PRIVATE_KEY>
+
+# Custom owners & threshold
+OWNER1=0x... OWNER2=0x... OWNER3=0x... REQUIRED_APPROVALS=2 \
+    forge script script/deploy.s.sol:DeployMultiSigWallet \
+    --rpc-url <RPC_URL> --broadcast --private-key <DEPLOYER_KEY>
 ```
 
 ---
 
-## Notes
+## Contract Overview
 
-* Replace `<RPC_URL>` with your network provider (e.g., Alchemy/Infura)
-* Replace `<PRIVATE_KEY>` with your wallet private key (use `.env` for safety)
-* Ensure MetaMask is connected to the correct network
+### `MultiSigWallet.sol`
+
+A multi-signature wallet where:
+- A set of **owners** is defined at deployment (immutable).
+- Any owner can **submit** a transaction proposal.
+- Owners **approve** pending transactions.
+- Once the **quorum** (M-of-N) is reached, any owner can **execute** the transaction.
+- Owners can **revoke** their approval before execution.
+
+### Key Functions
+
+| Function | Description |
+|---|---|
+| `submitTransaction(to, value, data)` | Propose a new transaction; returns `txId` |
+| `approveTransaction(txId)` | Add your approval to a pending transaction |
+| `executeTransaction(txId)` | Execute a transaction once quorum is met |
+| `revokeApproval(txId)` | Revoke a previously given approval |
+| `getOwners()` | View all wallet owners |
+| `getTransaction(txId)` | View details of a specific transaction |
+| `getTransactionCount()` | View total number of submitted transactions |
+
+### Security Features
+
+- **ReentrancyGuard** (OpenZeppelin) on `executeTransaction()`
+- **Checks-Effects-Interactions** pattern — `executed` flag set before external call
+- **Custom errors** for gas-efficient reverts
+- **Input validation** — zero-address, duplicates, invalid quorum
 
 ---
+
+## Project Structure
+
+```
+├── src/
+│   └── MultiSigWallet.sol      # Main contract
+├── test/
+│   └── MultiSigWallet.t.sol    # Comprehensive test suite
+├── script/
+│   └── deploy.s.sol            # Deployment script
+├── docs/
+│   └── MultiSigWallet_Explained.md  # Detailed code explanation
+├── lib/
+│   ├── forge-std/               # Foundry standard library
+│   └── openzeppelin-contracts/  # OpenZeppelin v5.6.1
+├── foundry.toml                 # Foundry configuration
+└── README.md                    # This file
+```
+
+---
+
+## License
+
+MIT
