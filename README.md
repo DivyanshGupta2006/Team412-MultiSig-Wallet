@@ -1,10 +1,10 @@
-# Multi-Signature Wallet 
+# Multi-Signature Wallet
 
 ## Project Overview
 
 This project is developed as part of the course **CS218 – Programmable and Interoperable Blockchain**, instructed by **Mrs. Subhra Mazumdar**.
 
-The objective of this project is to design and implement a **Multi-Signature Wallet (MultiSig)** smart contract using Solidity and the Foundry framework.
+The objective of this project is to design and implement a **Multi-Signature Wallet (MultiSig)** smart contract using Solidity and the Foundry framework, accompanied by a highly polished, modern Web3 React frontend.
 
 The wallet enforces an **M-of-N approval mechanism**, meaning a transaction can only be executed after receiving a minimum number of approvals from registered owners.
 
@@ -31,50 +31,26 @@ This improves:
 
 ## Tech Stack
 
-- Solidity (Smart Contracts)
+**Smart Contract Backend:**
+- Solidity
 - Foundry (Build, Testing, Gas Optimization)
 - OpenZeppelin v5.6.1 (Security Standards)
-- MetaMask (Wallet Interaction)
-- IPFS (Optional Off-chain Storage)
+
+**Web3 Frontend:**
+- React 18 & Vite
+- Ethers.js v6 (Blockchain Interaction)
+- Vanilla CSS (Antigravity Glassmorphism UI)
+- MetaMask (Wallet Authentication)
 
 ---
 
 ## Core Features
 
-- Multiple wallet owners (set at deployment)
-- Transaction proposal system
-- Approval-based execution (M-of-N quorum)
-- Revocation of approvals before execution
-- Secure execution using best practices
-
----
-
-## Contract Overview
-
-### `MultiSigWallet.sol`
-
-The contract implements:
-
-- **Immutable owner set**
-- **Transaction lifecycle:**
-  1. Submit
-  2. Approve
-  3. Execute
-  4. Revoke (optional)
-
----
-
-### Key Functions
-
-| Function | Description |
-|---|---|
-| `submitTransaction(to, value, data)` | Propose a new transaction |
-| `approveTransaction(txId)` | Approve a transaction |
-| `executeTransaction(txId)` | Execute after quorum is reached |
-| `revokeApproval(txId)` | Revoke approval before execution |
-| `getOwners()` | Returns list of owners |
-| `getTransaction(txId)` | Returns transaction details |
-| `getTransactionCount()` | Returns total transactions |
+- **Decentralized Consensus**: Multiple wallet owners (set at deployment) with an M-of-N quorum required for execution.
+- **Transaction Proposals**: Owners can submit transactions with target addresses, ETH values, and descriptive comments.
+- **Approval Lifecycle**: Signers can approve or revoke their approvals before the threshold is met.
+- **Premium User Interface**: Features a dynamic "Cyber-Aurora" aesthetic, mesh gradients, frosted glassmorphism, and responsive activity charting.
+- **Role-Based Access**: The dashboard strictly verifies the connected MetaMask wallet; non-owners are blocked from the application.
 
 ---
 
@@ -95,146 +71,100 @@ The contract implements:
 
 ```
 ├── src/
-│   └── MultiSigWallet.sol
+│   └── MultiSigWallet.sol       # Core Smart Contract
 ├── test/
-│   └── MultiSigWallet.t.sol
+│   └── MultiSigWallet.t.sol     # Foundry Tests
 ├── script/
-│   └── Deploy.s.sol
-├── docs/
-│   └── MultiSigWallet_Explained.md
-├── lib/
-│   ├── forge-std/
-│   └── openzeppelin-contracts/
-├── foundry.toml
+│   └── Deploy.s.sol             # Deployment Script
+├── frontend/
+│   ├── src/
+│   │   ├── components/          # React UI Components
+│   │   ├── utils/contract.js    # Ethers.js ABI mapping
+│   │   ├── App.jsx              # App state & routing
+│   │   └── index.css            # Advanced UI styling
+│   └── package.json             # React dependencies
+├── deploy.sh                    # Automated deployment helper
 └── README.md
 ```
 
 ---
 
-# Installation Guide
-
----
+# Installation & Usage Guide
 
 ## Prerequisites
 
 - Git
 - Foundry (forge, cast, anvil)
-- MetaMask
-- Basic CLI knowledge
+- Node.js (v18+)
+- MetaMask Browser Extension
 
 ---
 
-## 1. Linux
+## 1. Smart Contract Setup
 
-```bash
-sudo apt update && sudo apt install git curl
-curl -L https://foundry.paradigm.xyz | bash
-source ~/.bashrc
-foundryup
-```
-
----
-
-## 2. macOS
-
-```bash
-brew install git curl
-curl -L https://foundry.paradigm.xyz | bash
-source ~/.zshrc
-foundryup
-```
-
----
-
-## 3. Windows (Recommended: WSL)
-
-```powershell
-wsl --install
-```
-
-Then inside WSL:
-
-```bash
-sudo apt update && sudo apt install git curl
-curl -L https://foundry.paradigm.xyz | bash
-source ~/.bashrc
-foundryup
-```
-
----
-
-## Project Setup
-
-### Clone Repository
+Clone the repository and install Foundry dependencies:
 
 ```bash
 git clone <your-repo-link>
-cd project-10-multisig-wallet
-```
-
----
-
-### Install Dependencies
-
-```bash
+cd Team412-MultiSig-Wallet
 forge install
 ```
 
----
-
-### Build Contracts
+### Build & Test
 
 ```bash
 forge build
-```
-
----
-
-### Run Tests
-
-```bash
-# Standard tests
-forge test
-
-# Verbose
 forge test -vvv
-
-# Gas report
-forge test --gas-report
-
-# Coverage
-forge coverage
 ```
 
----
+### Deployment
 
-## Local Deployment (Anvil)
+We have included a `deploy.sh` script to make deployment to Sepolia (or local Anvil) seamless. 
 
+1. Create a `.env` file in the root directory:
+```env
+SEPOLIA_RPC_URL="your_alchemy_or_infura_url"
+PRIVATE_KEY="your_wallet_private_key"
+ETHERSCAN_API_KEY="your_etherscan_key_for_verification"
+```
+
+2. Run the deployment script:
 ```bash
-anvil &
-forge script script/Deploy.s.sol \
-  --rpc-url http://127.0.0.1:8545 \
-  --broadcast --private-key <DEPLOYER_PRIVATE_KEY>
+# To deploy to local Anvil network
+./deploy.sh local
+
+# To deploy to Sepolia testnet
+./deploy.sh sepolia
 ```
 
 ---
 
-## Custom Deployment (Owners + Threshold)
+## 2. Frontend Setup
 
+Once the contract is deployed, copy the deployed contract address from the terminal output.
+
+1. Navigate to the frontend directory:
 ```bash
-OWNER1=0x... OWNER2=0x... OWNER3=0x... REQUIRED_APPROVALS=2 \
-forge script script/Deploy.s.sol \
-  --rpc-url <RPC_URL> \
-  --broadcast --private-key <PRIVATE_KEY>
+cd frontend
 ```
 
----
+2. Install dependencies:
+```bash
+npm install
+```
 
-## Notes
+3. Update the Contract Address:
+Open `frontend/src/utils/contract.js` and paste your newly deployed address:
+```javascript
+export const CONTRACT_ADDRESS = "0xYourDeployedAddressHere";
+```
 
-- Replace `<RPC_URL>` with Alchemy/Infura endpoint
-- Store private keys securely using `.env`
-- Ensure MetaMask is connected to the correct network
+4. Start the Development Server:
+```bash
+npm run dev
+```
+
+5. Open your browser to `http://localhost:5173`. Connect your MetaMask wallet (ensure you are on the Sepolia network and using an owner account) to access the dashboard!
 
 ---
 
