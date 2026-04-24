@@ -118,15 +118,16 @@ contract MultiSigWallet is ReentrancyGuard {
     /// @param _owners Array of owner addresses (must be non-empty, no duplicates, no zero-address).
     /// @param _requiredApprovals Minimum approvals needed to execute a transaction (1 ≤ M ≤ N).
     constructor(address[] memory _owners, uint256 _requiredApprovals) {
-        if (_owners.length == 0) revert InvalidOwner();
+        uint256 ownerCount = _owners.length; // Gas: cache array length
+        if (ownerCount == 0) revert InvalidOwner();
         if (
             _requiredApprovals == 0 ||
-            _requiredApprovals > _owners.length
+            _requiredApprovals > ownerCount
         ) {
             revert InvalidRequiredApprovals();
         }
 
-        for (uint256 i = 0; i < _owners.length; i++) {
+        for (uint256 i = 0; i < ownerCount;) {
             address owner = _owners[i];
 
             if (owner == address(0)) revert InvalidOwner();
@@ -134,6 +135,8 @@ contract MultiSigWallet is ReentrancyGuard {
 
             isOwner[owner] = true;
             owners.push(owner);
+
+            unchecked { ++i; } // Gas: safe because i < ownerCount is bounded
         }
 
         requiredApprovals = _requiredApprovals;
@@ -153,9 +156,9 @@ contract MultiSigWallet is ReentrancyGuard {
     function submitTransaction(
         address _to,
         uint256 _value,
-        bytes memory _data,
-        string memory _description
-    ) public onlyOwner returns (uint256 txId) {
+        bytes calldata _data,
+        string calldata _description
+    ) external onlyOwner returns (uint256 txId) { // Gas: external + calldata avoids memory copy
         txId = transactions.length;
 
         transactions.push(
@@ -177,14 +180,14 @@ contract MultiSigWallet is ReentrancyGuard {
     function approveTransaction(
         uint256 _txId
     )
-        public
+        external // Gas: external is cheaper than public for non-internally-called functions
         onlyOwner
         txExists(_txId)
         notExecuted(_txId)
         notApproved(_txId)
     {
         Transaction storage txn = transactions[_txId];
-        txn.approvalCount += 1;
+        unchecked { txn.approvalCount += 1; } // Gas: cannot overflow — bounded by number of owners
         isApproved[_txId][msg.sender] = true;
 
         emit ApproveTransaction(msg.sender, _txId);
@@ -197,15 +200,16 @@ contract MultiSigWallet is ReentrancyGuard {
     function executeTransaction(
         uint256 _txId
     )
-        public
+        external // Gas: external is cheaper than public for non-internally-called functions
         onlyOwner
         txExists(_txId)
         notExecuted(_txId)
         nonReentrant
     {
         Transaction storage txn = transactions[_txId];
+        uint256 _requiredApprovals = requiredApprovals; // Gas: cache SLOAD into memory
 
-        if (txn.approvalCount < requiredApprovals) {
+        if (txn.approvalCount < _requiredApprovals) {
             revert InsufficientApprovals();
         }
 
@@ -221,11 +225,11 @@ contract MultiSigWallet is ReentrancyGuard {
     /// @param _txId The ID of the transaction to revoke approval from.
     function revokeApproval(
         uint256 _txId
-    ) public onlyOwner txExists(_txId) notExecuted(_txId) {
+    ) external onlyOwner txExists(_txId) notExecuted(_txId) { // Gas: external is cheaper
         if (!isApproved[_txId][msg.sender]) revert TxNotApproved();
 
         Transaction storage txn = transactions[_txId];
-        txn.approvalCount -= 1;
+        unchecked { txn.approvalCount -= 1; } // Gas: cannot underflow — checked by TxNotApproved above
         isApproved[_txId][msg.sender] = false;
 
         emit RevokeApproval(msg.sender, _txId);
@@ -233,13 +237,13 @@ contract MultiSigWallet is ReentrancyGuard {
 
     /// @notice Returns the complete list of wallet owner addresses.
     /// @return An array of all owner addresses.
-    function getOwners() public view returns (address[] memory) {
+    function getOwners() external view returns (address[] memory) { // Gas: external avoids ABI re-encoding
         return owners;
     }
 
     /// @notice Returns the total number of transactions that have been submitted.
     /// @return The length of the transactions array.
-    function getTransactionCount() public view returns (uint256) {
+    function getTransactionCount() external view returns (uint256) { // Gas: external
         return transactions.length;
     }
 
@@ -254,7 +258,7 @@ contract MultiSigWallet is ReentrancyGuard {
     function getTransaction(
         uint256 _txId
     )
-        public
+        external // Gas: external
         view
         returns (
             address to,
