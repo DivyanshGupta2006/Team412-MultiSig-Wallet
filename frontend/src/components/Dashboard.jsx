@@ -4,6 +4,7 @@ import SubmitTransaction from './SubmitTransaction';
 import TransactionList from './TransactionList';
 import ActivityChart from './ActivityChart';
 import OwnersList from './OwnersList';
+import { fetchFromIPFS } from '../utils/ipfs';
 
 const Dashboard = ({ account, contract, provider, disconnectWallet }) => {
   const [walletBalance, setWalletBalance] = useState('0');
@@ -44,14 +45,23 @@ const Dashboard = ({ account, contract, provider, disconnectWallet }) => {
           to: tx.to,
           value: tx.value,
           data: tx.data,
-          description: tx.description,
+          descriptionURI: tx.descriptionURI,
+          description: '', // Will be resolved from IPFS
           executed: tx.executed,
           approvalCount: tx.approvalCount,
           hasApproved
         });
       }
+
+      // Resolve all IPFS descriptions in parallel
+      const resolvedTxs = await Promise.all(
+        txs.map(async (tx) => {
+          const description = await fetchFromIPFS(tx.descriptionURI);
+          return { ...tx, description };
+        })
+      );
       
-      setTransactions(txs.reverse());
+      setTransactions(resolvedTxs.reverse());
     } catch (err) {
       console.error("Error fetching wallet details:", err);
     } finally {

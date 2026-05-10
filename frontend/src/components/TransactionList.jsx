@@ -59,12 +59,28 @@ const TransactionList = ({ transactions, contract, account, fetchTransactions, i
             </span>
           </div>
           
-          {tx.description && (
+          {(tx.description || tx.descriptionURI) && (
             <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(0, 229, 255, 0.05)', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid var(--color-secondary)' }}>
               <p style={{ margin: 0, color: '#fff', fontSize: '1.05rem', lineHeight: '1.5' }}>
                 <strong style={{ color: 'var(--color-secondary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: '0.25rem' }}>Proposal Description</strong>
-                {tx.description}
+                {tx.description || 'Loading from IPFS...'}
               </p>
+              {tx.descriptionURI && (
+                <a
+                  href={`https://gateway.pinata.cloud/ipfs/${tx.descriptionURI.replace('ipfs://', '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', textDecoration: 'none', opacity: 0.7, transition: 'opacity 0.2s' }}
+                  onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                  onMouseLeave={(e) => e.currentTarget.style.opacity = '0.7'}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                  </svg>
+                  View on IPFS
+                </a>
+              )}
             </div>
           )}
           

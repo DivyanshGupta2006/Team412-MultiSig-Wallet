@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { ethers } from 'ethers';
+import { uploadToIPFS } from '../utils/ipfs';
 
 const SubmitTransaction = ({ contract, fetchTransactions }) => {
   const [to, setTo] = useState('');
   const [value, setValue] = useState('');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitPhase, setSubmitPhase] = useState(''); // 'ipfs' | 'chain'
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
@@ -18,11 +20,17 @@ const SubmitTransaction = ({ contract, fetchTransactions }) => {
     try {
       setError('');
       setIsSubmitting(true);
-      
+
+      // Phase 1: Upload description to IPFS
+      setSubmitPhase('ipfs');
+      const descriptionURI = await uploadToIPFS(description);
+
+      // Phase 2: Submit transaction with IPFS URI to the blockchain
+      setSubmitPhase('chain');
       const parsedValue = ethers.parseEther(value);
       const parsedData = '0x';
 
-      const tx = await contract.submitTransaction(to, parsedValue, parsedData, description);
+      const tx = await contract.submitTransaction(to, parsedValue, parsedData, descriptionURI);
       await tx.wait();
       
       setTo('');
@@ -37,7 +45,15 @@ const SubmitTransaction = ({ contract, fetchTransactions }) => {
       setError(err.reason || err.message || 'Transaction failed.');
     } finally {
       setIsSubmitting(false);
+      setSubmitPhase('');
     }
+  };
+
+  const getButtonText = () => {
+    if (!isSubmitting) return 'Submit to Network';
+    if (submitPhase === 'ipfs') return 'Pinning to IPFS...';
+    if (submitPhase === 'chain') return 'Submitting on-chain...';
+    return 'Processing...';
   };
 
   return (
@@ -96,17 +112,20 @@ const SubmitTransaction = ({ contract, fetchTransactions }) => {
             value={description} 
             onChange={(e) => setDescription(e.target.value)} 
           />
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem', display: 'block' }}>
+            Stored off-chain via IPFS · Only the content hash is recorded on-chain
+          </span>
         </div>
         
         <button type="submit" className="btn btn-glow" style={{ width: '100%', marginTop: '1rem' }} disabled={isSubmitting}>
           <span>
             {isSubmitting ? (
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
                 <span className="loader-ring" style={{ width: '20px', height: '20px', borderWidth: '2px' }}></span>
-                Proposing...
+                {getButtonText()}
               </span>
             ) : (
-              'Submit to Network'
+              getButtonText()
             )}
           </span>
         </button>

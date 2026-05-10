@@ -30,14 +30,14 @@ contract MultiSigWallet is ReentrancyGuard {
     /// @param to The target address of the transaction.
     /// @param value The amount of ETH (in wei) to send with the transaction.
     /// @param data The calldata to pass to the target address.
-    /// @param description A human-readable description of the transaction purpose.
+    /// @param descriptionURI An IPFS URI (e.g. ipfs://Qm...) pointing to the off-chain transaction description.
     event SubmitTransaction(
         address indexed owner,
         uint256 indexed txId,
         address indexed to,
         uint256 value,
         bytes data,
-        string description
+        string descriptionURI
     );
     
     /// @notice Emitted when an owner approves a pending transaction.
@@ -59,14 +59,14 @@ contract MultiSigWallet is ReentrancyGuard {
     /// @param to The target address to call.
     /// @param value The ETH value (in wei) to send.
     /// @param data The calldata payload for the external call.
-    /// @param description A human-readable description of the transaction.
+    /// @param descriptionURI An IPFS URI pointing to the off-chain transaction description.
     /// @param executed Whether the transaction has been executed.
     /// @param approvalCount The number of owner approvals received so far.
     struct Transaction {
         address to;
         uint256 value;
         bytes data;
-        string description;
+        string descriptionURI;
         bool executed;
         uint256 approvalCount;
     }
@@ -151,13 +151,13 @@ contract MultiSigWallet is ReentrancyGuard {
     /// @param _to The target address for the transaction.
     /// @param _value The amount of ETH (in wei) to send.
     /// @param _data The calldata to include in the low-level call.
-    /// @param _description A human-readable description of the transaction purpose.
+    /// @param _descriptionURI An IPFS URI (e.g. ipfs://Qm...) pointing to the off-chain description.
     /// @return txId The index of the newly created transaction in the transactions array.
     function submitTransaction(
         address _to,
         uint256 _value,
         bytes calldata _data,
-        string calldata _description
+        string calldata _descriptionURI
     ) external onlyOwner returns (uint256 txId) { // Gas: external + calldata avoids memory copy
         txId = transactions.length;
 
@@ -166,13 +166,13 @@ contract MultiSigWallet is ReentrancyGuard {
                 to: _to,
                 value: _value,
                 data: _data,
-                description: _description,
+                descriptionURI: _descriptionURI,
                 executed: false,
                 approvalCount: 0
             })
         );
 
-        emit SubmitTransaction(msg.sender, txId, _to, _value, _data, _description);
+        emit SubmitTransaction(msg.sender, txId, _to, _value, _data, _descriptionURI);
     }
 
     /// @notice Approves a pending transaction. Each owner can only approve once per transaction.
@@ -252,7 +252,7 @@ contract MultiSigWallet is ReentrancyGuard {
     /// @return to The target address.
     /// @return value The ETH value in wei.
     /// @return data The calldata payload.
-    /// @return description The human-readable description.
+    /// @return descriptionURI The IPFS URI pointing to the off-chain description.
     /// @return executed Whether the transaction has been executed.
     /// @return approvalCount The number of approvals received.
     function getTransaction(
@@ -264,7 +264,7 @@ contract MultiSigWallet is ReentrancyGuard {
             address to,
             uint256 value,
             bytes memory data,
-            string memory description,
+            string memory descriptionURI,
             bool executed,
             uint256 approvalCount
         )
@@ -275,7 +275,7 @@ contract MultiSigWallet is ReentrancyGuard {
             txn.to,
             txn.value,
             txn.data,
-            txn.description,
+            txn.descriptionURI,
             txn.executed,
             txn.approvalCount
         );

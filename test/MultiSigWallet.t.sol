@@ -51,7 +51,7 @@ contract MultiSigWalletTest is Test {
 
     function _submitDummyTx() internal returns (uint256) {
         vm.prank(owner1);
-        return wallet.submitTransaction(address(target), 0, "", "dummy tx");
+        return wallet.submitTransaction(address(target), 0, "", "ipfs://QmDummyTxHash123");
     }
 
     function _approveByTwo(uint256 txId) internal {
@@ -116,7 +116,7 @@ contract MultiSigWalletTest is Test {
     function test_submitTransaction_revertsForNonOwner() public {
         vm.prank(nonOwner);
         vm.expectRevert(MultiSigWallet.NotOwner.selector);
-        wallet.submitTransaction(address(target), 0, "", "should fail");
+        wallet.submitTransaction(address(target), 0, "", "ipfs://QmShouldFail");
     }
 
     // 7. approveTransaction reverts for non-owner
@@ -152,15 +152,15 @@ contract MultiSigWalletTest is Test {
     function test_submitTransaction_storesCorrectFields() public {
         bytes memory data = abi.encodeWithSelector(MockTarget.setValue.selector, 42);
         vm.prank(owner1);
-        uint256 txId = wallet.submitTransaction(address(target), 1 ether, data, "set value to 42");
+        uint256 txId = wallet.submitTransaction(address(target), 1 ether, data, "ipfs://QmSetValue42");
 
         assertEq(txId, 0);
         assertEq(wallet.getTransactionCount(), 1);
-        (address to, uint256 value, bytes memory d, string memory description, bool executed, uint256 approvalCount) = wallet.getTransaction(0);
+        (address to, uint256 value, bytes memory d, string memory descriptionURI, bool executed, uint256 approvalCount) = wallet.getTransaction(0);
         assertEq(to, address(target));
         assertEq(value, 1 ether);
         assertEq(keccak256(d), keccak256(data));
-        assertEq(keccak256(bytes(description)), keccak256(bytes("set value to 42")));
+        assertEq(keccak256(bytes(descriptionURI)), keccak256(bytes("ipfs://QmSetValue42")));
         assertFalse(executed);
         assertEq(approvalCount, 0);
     }
@@ -169,9 +169,9 @@ contract MultiSigWalletTest is Test {
     function test_submitTransaction_emitsEvent() public {
         bytes memory data = abi.encodeWithSelector(MockTarget.setValue.selector, 7);
         vm.expectEmit(true, true, true, true);
-        emit MultiSigWallet.SubmitTransaction(owner1, 0, address(target), 1 ether, data, "set value to 7");
+        emit MultiSigWallet.SubmitTransaction(owner1, 0, address(target), 1 ether, data, "ipfs://QmSetValue7");
         vm.prank(owner1);
-        wallet.submitTransaction(address(target), 1 ether, data, "set value to 7");
+        wallet.submitTransaction(address(target), 1 ether, data, "ipfs://QmSetValue7");
     }
 
     // ===================== Approve Transaction Tests =====================
@@ -230,7 +230,7 @@ contract MultiSigWalletTest is Test {
     function test_executeTransaction_transfersEth() public {
         address payable recipient = payable(makeAddr("recipient"));
         vm.prank(owner1);
-        uint256 txId = wallet.submitTransaction(recipient, 1 ether, "", "send 1 eth");
+        uint256 txId = wallet.submitTransaction(recipient, 1 ether, "", "ipfs://QmSend1Eth");
         _approveByTwo(txId);
 
         vm.prank(owner1);
@@ -244,7 +244,7 @@ contract MultiSigWalletTest is Test {
     function test_executeTransaction_executesCalldata() public {
         bytes memory data = abi.encodeWithSelector(MockTarget.setValue.selector, 42);
         vm.prank(owner1);
-        uint256 txId = wallet.submitTransaction(address(target), 0, data, "call setValue(42)");
+        uint256 txId = wallet.submitTransaction(address(target), 0, data, "ipfs://QmCallSetValue42");
         _approveByTwo(txId);
         vm.prank(owner1);
         wallet.executeTransaction(txId);
@@ -294,7 +294,7 @@ contract MultiSigWalletTest is Test {
     function test_executeTransaction_revertsOnFailedCall() public {
         bytes memory data = abi.encodeWithSelector(MockTarget.alwaysRevert.selector);
         vm.prank(owner1);
-        uint256 txId = wallet.submitTransaction(address(target), 0, data, "will revert");
+        uint256 txId = wallet.submitTransaction(address(target), 0, data, "ipfs://QmWillRevert");
         _approveByTwo(txId);
         vm.prank(owner1);
         vm.expectRevert(MultiSigWallet.TxFailed.selector);
@@ -382,7 +382,7 @@ contract MultiSigWalletTest is Test {
     function test_fullHappyPath_endToEnd() public {
         bytes memory data = abi.encodeWithSelector(MockTarget.setValue.selector, 777);
         vm.prank(owner1);
-        uint256 txId = wallet.submitTransaction(address(target), 1 ether, data, "e2e: set 777 with 1 eth");
+        uint256 txId = wallet.submitTransaction(address(target), 1 ether, data, "ipfs://QmE2ESet777With1Eth");
 
         vm.prank(owner1);
         wallet.approveTransaction(txId);
