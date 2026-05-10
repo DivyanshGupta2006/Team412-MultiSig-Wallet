@@ -1,0 +1,60 @@
+================================================================================
+                           COVERAGE REPORT
+================================================================================
+
+[PLEASE RUN THE FOLLOWING COMMAND IN YOUR WSL TERMINAL TO GENERATE THE LATEST COVERAGE:]
+$ forge coverage
+
+[Replace this placeholder text with the output of the command above]
+Compiling 25 files with Solc 0.8.24
+Solc 0.8.24 finished in 932.13ms
+Compiler run successful!
+Analysing contracts...
+Running tests...
+
+Ran 30 tests for test/MultiSigWallet.t.sol:MultiSigWalletTest
+[PASS] test_approveTransaction_emitsEvent() (gas: 148316)
+[PASS] test_approveTransaction_revertsForNonOwner() (gas: 105305)
+[PASS] test_approveTransaction_revertsOnAlreadyExecutedTx() (gas: 217002)
+[PASS] test_approveTransaction_revertsOnDoubleApproval() (gas: 149338)
+[PASS] test_approveTransaction_revertsOnNonExistentTx() (gas: 16062)
+[PASS] test_approveTransaction_updatesState() (gas: 155263)
+[PASS] test_constructor_revertsOnDuplicateOwner() (gas: 132902)
+[PASS] test_constructor_revertsOnEmptyOwners() (gas: 61797)
+[PASS] test_constructor_revertsOnInvalidRequiredApprovals() (gas: 133181)
+[PASS] test_constructor_revertsOnZeroAddress() (gas: 132521)
+[PASS] test_constructor_setsStateCorrectly() (gas: 47813)
+[PASS] test_executeTransaction_emitsEvent() (gas: 212389)
+[PASS] test_executeTransaction_executesCalldata() (gas: 301611)
+[PASS] test_executeTransaction_revertsForNonOwner() (gas: 183565)
+[PASS] test_executeTransaction_revertsOnAlreadyExecuted() (gas: 213154)
+[PASS] test_executeTransaction_revertsOnFailedCall() (gas: 232351)
+[PASS] test_executeTransaction_revertsOnInsufficientApprovals() (gas: 156794)
+[PASS] test_executeTransaction_revertsOnNonExistentTx() (gas: 16126)
+[PASS] test_executeTransaction_transfersEth() (gas: 262315)
+[PASS] test_fullHappyPath_endToEnd() (gas: 360842)
+[PASS] test_receive_acceptsEthAndEmitsDeposit() (gas: 23786)
+[PASS] test_revokeApproval_blocksExecutionUntilReApproved() (gas: 238624)
+[PASS] test_revokeApproval_decrementsCountAndUpdatesMapping() (gas: 124277)
+[PASS] test_revokeApproval_emitsEvent() (gas: 118755)
+[PASS] test_revokeApproval_revertsForNonOwner() (gas: 152572)
+[PASS] test_revokeApproval_revertsOnExecutedTx() (gas: 213132)
+[PASS] test_revokeApproval_revertsWhenNotApproved() (gas: 104172)
+[PASS] test_submitTransaction_emitsEvent() (gas: 190133)
+[PASS] test_submitTransaction_revertsForNonOwner() (gas: 17507)
+[PASS] test_submitTransaction_storesCorrectFields() (gas: 193918)
+Suite result: ok. 30 passed; 0 failed; 0 skipped; finished in 12.82ms (77.73ms CPU time)
+
+Ran 1 test suite in 96.50ms (12.82ms CPU time): 30 tests passed, 0 failed, 0 skipped (30 total tests)
+
+╭---------------------------+-----------------+-----------------+-----------------+-----------------╮
+| File                      | % Lines         | % Statements    | % Branches      | % Funcs         |
++===================================================================================================+
+| script/deploy.s.sol       | 0.00% (0/16)    | 0.00% (0/21)    | 100.00% (0/0)   | 0.00% (0/1)     |
+|---------------------------+-----------------+-----------------+-----------------+-----------------|
+| src/MultiSigWallet.sol    | 100.00% (56/56) | 100.00% (51/51) | 100.00% (11/11) | 100.00% (13/13) |
+|---------------------------+-----------------+-----------------+-----------------+-----------------|
+| test/MultiSigWallet.t.sol | 100.00% (5/5)   | 100.00% (3/3)   | 100.00% (0/0)   | 100.00% (2/2)   |
+|---------------------------+-----------------+-----------------+-----------------+-----------------|
+| Total                     | 79.22% (61/77)  | 72.00% (54/75)  | 100.00% (11/11) | 93.75% (15/16)  |
+╰---------------------------+-----------------+-----------------+-----------------+-----------------╯

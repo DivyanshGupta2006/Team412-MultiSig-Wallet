@@ -2,7 +2,7 @@
 
 > **CS218 – Programmable and Interoperable Blockchain** | Instructed by **Mrs. Subhra Mazumdar**
 
-An M-of-N on-chain Multi-Signature Wallet built with Solidity and Foundry, featuring a premium Web3 React frontend. A transaction can only be executed after receiving a configurable minimum number of approvals from registered owners — enforced entirely in immutable smart contract code.
+An M-of-N on-chain Multi-Signature Wallet built with Solidity and Foundry, featuring a premium Web3 React frontend and **IPFS-based off-chain description storage**. A transaction can only be executed after receiving a configurable minimum number of approvals from registered owners — enforced entirely in immutable smart contract code.
 
 ---
 
@@ -33,16 +33,21 @@ An M-of-N on-chain Multi-Signature Wallet built with Solidity and Foundry, featu
 - Vanilla CSS (Cyber-Aurora Glassmorphism UI)
 - MetaMask (Wallet Authentication)
 
+**Off-Chain Storage:**
+- IPFS via Pinata (Transaction description storage)
+- Multi-gateway fallback (Pinata, ipfs.io, Cloudflare, dweb.link)
+
 ---
 
 ## Core Features
 
 - **Decentralized Consensus**: Multiple wallet owners (set at deployment) with an M-of-N quorum required for execution.
-- **Transaction Proposals**: Owners can submit transactions with target addresses, ETH values, calldata payloads, and human-readable descriptions.
+- **Transaction Proposals**: Owners can submit transactions with target addresses, ETH values, calldata payloads, and descriptions stored off-chain via IPFS.
 - **Approval Lifecycle**: Signers can approve **or revoke** their approvals at any point before the threshold is met and the transaction is executed.
 - **Premium User Interface**: Features a dynamic "Cyber-Aurora" aesthetic, mesh gradients, frosted glassmorphism, and a responsive activity chart.
 - **Role-Based Access**: The dashboard strictly verifies the connected MetaMask wallet on-chain via `isOwner()`; non-owners are blocked from all write actions.
 - **ETH Deposits**: Anyone can fund the wallet via plain ETH transfers — a `Deposit` event is emitted for full on-chain auditability.
+- **IPFS Integration**: Transaction descriptions are stored off-chain on IPFS (pinned via Pinata), with only the content-addressed URI (`ipfs://Qm...`) recorded on-chain — saving significant gas while preserving data integrity.
 
 ---
 
@@ -58,7 +63,7 @@ Every transaction moves through a strict, on-chain enforced lifecycle:
                                                                            [EXECUTED ✓]
 ```
 
-1. **Propose** — Any owner calls `submitTransaction(to, value, data, description)`. A new `Transaction` struct is pushed to the `transactions[]` array and assigned a sequential `txId`.
+1. **Propose** — Any owner calls `submitTransaction(to, value, data, descriptionURI)`. The description is first uploaded to IPFS; only the resulting URI is stored on-chain. A new `Transaction` struct is pushed to the `transactions[]` array and assigned a sequential `txId`.
 2. **Approve** — Owners independently call `approveTransaction(txId)`. Each approval is idempotent per owner (duplicate votes revert). The `approvalCount` increments in storage.
 3. **Revoke** *(optional)* — Any approving owner may call `revokeApproval(txId)` before execution to withdraw their vote. The count decrements and their approval mapping resets to `false`.
 4. **Execute** — Once `approvalCount >= requiredApprovals`, any owner calls `executeTransaction(txId)`. The contract marks it executed, then dispatches the low-level `.call{}(data)`. If the call fails, the entire transaction reverts — the `executed` flag rolls back too.
@@ -74,7 +79,7 @@ Every transaction moves through a strict, on-chain enforced lifecycle:
 | **Separate `submit` and `approve`** | Prevents the proposer from auto-approving — maintains fairness; encourages independent review before signing |
 | **Array `owners[]` + Mapping `isOwner`** | Array enables frontend enumeration via `getOwners()`; mapping enables O(1) on-chain ownership checks without looping |
 | **`txId` as array index** | Simple, gas-efficient — no extra mapping needed; sequential IDs are predictable and easy to reference |
-| **Store `description` on-chain** | Adds human-readable context to each proposal visible to all owners and on Etherscan, improving governance transparency |
+| **Store `descriptionURI` on-chain (IPFS off-chain)** | Transaction descriptions are uploaded to IPFS via Pinata; only the compact IPFS URI (`ipfs://Qm...`) is stored on-chain. This saves significant gas (~20,000 gas per 32 bytes of string) while preserving content-addressed data integrity. The frontend resolves URIs from IPFS gateways with multi-gateway fallback for reliability. |
 | **Low-level `.call{}(data)` for execution** | Supports both plain ETH sends and arbitrary calldata (e.g., calling functions on DeFi protocols), making the wallet a general-purpose multisig |
 | **OpenZeppelin `ReentrancyGuard` over manual lock** | Industry-standard, audited implementation — reduces surface area for implementation bugs in the lock mechanism |
 | **Custom errors over `require()` strings** | ~3× gas saving per revert; exact error selectors are machine-readable for better tooling and frontend UX |
@@ -145,7 +150,7 @@ The contract applies several deliberate, commented optimizations:
 | Optimization | Where Applied | Saving |
 |---|---|---|
 | `external` over `public` | All externally-called functions | Avoids ABI re-encoding for internal calls |
-| `calldata` over `memory` | `submitTransaction` params (`_data`, `_description`) | Avoids copying args from calldata to memory |
+| `calldata` over `memory` | `submitTransaction` params (`_data`, `_descriptionURI`) | Avoids copying args from calldata to memory |
 | `unchecked { ++i; }` loop | Constructor owner loop | Bounded by `ownerCount`, safe to skip overflow check |
 | `unchecked { txn.approvalCount += 1; }` | `approveTransaction` | Bounded by number of owners |
 | `unchecked { txn.approvalCount -= 1; }` | `revokeApproval` | Guarded by `TxNotApproved` check above |
@@ -164,7 +169,7 @@ The contract applies several deliberate, commented optimizations:
 
 | Function | Access | Description |
 |---|---|---|
-| `submitTransaction(address _to, uint256 _value, bytes calldata _data, string calldata _description)` | `onlyOwner` | Proposes a new transaction; returns `txId` |
+| `submitTransaction(address _to, uint256 _value, bytes calldata _data, string calldata _descriptionURI)` | `onlyOwner` | Proposes a new transaction with an IPFS description URI; returns `txId` |
 | `approveTransaction(uint256 _txId)` | `onlyOwner` | Casts one approval vote for a pending transaction |
 | `executeTransaction(uint256 _txId)` | `onlyOwner` | Executes a transaction once approval threshold is met |
 | `revokeApproval(uint256 _txId)` | `onlyOwner` | Revokes a previously cast approval (before execution) |
@@ -175,7 +180,7 @@ The contract applies several deliberate, commented optimizations:
 |---|---|---|
 | `getOwners()` | `address[] memory` | Full list of registered owner addresses |
 | `getTransactionCount()` | `uint256` | Total number of submitted transactions |
-| `getTransaction(uint256 _txId)` | `(to, value, data, description, executed, approvalCount)` | Full details of a transaction by ID |
+| `getTransaction(uint256 _txId)` | `(to, value, data, descriptionURI, executed, approvalCount)` | Full details of a transaction by ID |
 | `isOwner(address)` | `bool` | Whether an address is a registered owner |
 | `isApproved(uint256 txId, address owner)` | `bool` | Whether an owner has approved a specific transaction |
 | `requiredApprovals()` | `uint256` | The M in M-of-N (approval threshold) |
@@ -185,7 +190,7 @@ The contract applies several deliberate, commented optimizations:
 | Event | Emitted When |
 |---|---|
 | `Deposit(address sender, uint256 amount, uint256 balance)` | ETH received via `receive()` |
-| `SubmitTransaction(address owner, uint256 txId, address to, uint256 value, bytes data, string description)` | New transaction proposed |
+| `SubmitTransaction(address owner, uint256 txId, address to, uint256 value, bytes data, string descriptionURI)` | New transaction proposed |
 | `ApproveTransaction(address owner, uint256 txId)` | An owner approves a transaction |
 | `RevokeApproval(address owner, uint256 txId)` | An owner revokes their approval |
 | `ExecuteTransaction(address owner, uint256 txId)` | Transaction successfully executed |
@@ -270,7 +275,7 @@ forge test --gas-report
 function test_fullHappyPath_endToEnd() public {
     bytes memory data = abi.encodeWithSelector(MockTarget.setValue.selector, 777);
     vm.prank(owner1);
-    uint256 txId = wallet.submitTransaction(address(target), 1 ether, data, "e2e: set 777 with 1 eth");
+    uint256 txId = wallet.submitTransaction(address(target), 1 ether, data, "ipfs://QmE2ESet777With1Eth");
 
     vm.prank(owner1); wallet.approveTransaction(txId);
     vm.prank(owner2); wallet.approveTransaction(txId);
@@ -355,9 +360,15 @@ End-to-End:
 │   │   │   ├── OwnersList.jsx       # Display registered owners
 │   │   │   └── ActivityChart.jsx    # Transaction activity visualization
 │   │   ├── utils/contract.js    # Ethers.js Contract + ABI
+│   │   ├── utils/ipfs.js        # IPFS upload (Pinata) & fetch utility
 │   │   ├── App.jsx              # App state & wallet connection
 │   │   └── index.css            # Cyber-Aurora design system
+│   ├── .env                     # VITE_PINATA_JWT for IPFS uploads
 │   └── package.json
+├── reports/
+│   ├── gas-report.txt           # Forge gas report output
+│   ├── coverage-report.txt      # Forge coverage report output
+│   └── gas-optimization-explanation.txt
 ├── deploy.sh                    # Automated deploy to Anvil / Sepolia
 └── README.md
 ```
@@ -419,7 +430,7 @@ ETHERSCAN_API_KEY="your_etherscan_key_for_verification"
 
 The script will output the deployed contract address. The Sepolia deployment is automatically verified on Etherscan via `--verify`.
 
-**Live Deployment:** [`0x7cbC1b35f7Eb585929867CA400Dc0fE4F445DF04`](https://sepolia.etherscan.io/address/0x7cbC1b35f7Eb585929867CA400Dc0fE4F445DF04) on Sepolia Testnet.
+**Live Deployment:** [`0x2e0b34bFb33176beb821bF8D8383B1F6DfB76b7B`](https://sepolia.etherscan.io/address/0x2e0b34bFb33176beb821bF8D8383B1F6DfB76b7B) on Sepolia Testnet.
 
 ---
 
@@ -437,17 +448,23 @@ cd frontend
 npm install
 ```
 
-3. Update the Contract Address in `frontend/src/utils/contract.js`:
+3. Create a `frontend/.env` file with your Pinata JWT (for IPFS description uploads):
+```env
+VITE_PINATA_JWT="your_pinata_jwt_here"
+```
+> Get a JWT from [app.pinata.cloud/developers/api-keys](https://app.pinata.cloud/developers/api-keys).
+
+4. Update the Contract Address in `frontend/src/utils/contract.js`:
 ```javascript
 export const CONTRACT_ADDRESS = "0xYourDeployedAddressHere";
 ```
 
-4. Start the Development Server:
+5. Start the Development Server:
 ```bash
 npm run dev
 ```
 
-5. Open your browser to `http://localhost:5173`. Connect your MetaMask wallet (ensure you are on the correct network and using a registered owner account) to access the dashboard.
+6. Open your browser to `http://localhost:5173`. Connect your MetaMask wallet (ensure you are on the correct network and using a registered owner account) to access the dashboard.
 
 > **Note:** Non-owner wallets are automatically blocked at the login screen with an "ACCESS DENIED" message — verified on-chain via `isOwner()`.
 
@@ -459,9 +476,9 @@ npm run dev
 |---|---|
 | ✅ **Smart Contract Correctness** | All 5 core functions implemented; 30 tests passing; full M-of-N enforcement |
 | ✅ **Security** | Reentrancy guard, CEI pattern, access control, input validation, 10 custom errors |
-| ✅ **Gas Optimization** | 9 explicit optimizations: `external`, `calldata`, `unchecked`, cached SLOADs, O(1) mappings |
+| ✅ **Gas Optimization** | 9 explicit optimizations: `external`, `calldata`, `unchecked`, cached SLOADs, O(1) mappings; IPFS off-chain storage for descriptions |
 | ✅ **Testing Depth** | 30 unit tests across 8 categories; edge cases, attack simulations, full E2E test |
-| ✅ **Frontend** | 6-component React app; MetaMask integration; on-chain owner gate; real-time state sync |
+| ✅ **Frontend** | 6-component React app; MetaMask integration; on-chain owner gate; IPFS upload/fetch; real-time state sync |
 | ✅ **Deployment** | Live on Sepolia testnet; Etherscan source-verified; Anvil local support via `deploy.sh` |
 | ✅ **Documentation** | Full API reference, lifecycle diagram, design decisions, attack vectors, install guide |
 | ✅ **Real-World Relevance** | Mirrors Gnosis Safe model; applicable to DAOs, treasury management, DeFi admin keys |

@@ -1,0 +1,125 @@
+================================================================================
+                               GAS REPORT
+================================================================================
+
+--------------------------------------------------------------------------------
+1. BEFORE AND AFTER GAS USAGE COMPARISON (IPFS Optimization)
+--------------------------------------------------------------------------------
+
+[Note: The exact before numbers were stored in the legacy gas-report.pdf, and 
+the exact after numbers are generated via Foundry. Below is the theoretical 
+comparison of the primary IPFS optimization.]
+
+Function: `submitTransaction`
+
+BEFORE (On-Chain String Storage):
+  - Description string (~200+ characters) was stored completely on-chain.
+  - Gas Cost: ~190,000+ gas depending on string length.
+  - Storage footprint: 7+ storage slots (at ~20,000 gas per slot).
+
+AFTER (Off-Chain IPFS URI):
+  - Only a compact IPFS URI (e.g., "ipfs://Qm...") of ~53 characters is stored.
+  - Gas Cost: ~110,000 gas.
+  - Storage footprint: 2 storage slots.
+
+REASONING:
+  On-chain string storage is highly inefficient and expensive. By pinning the 
+  description JSON to Pinata (IPFS) and storing only the resulting CID URI on 
+  the blockchain, we achieved an estimated ~71% reduction in storage costs 
+  for transaction descriptions, saving ~100,000+ gas per transaction.
+
+--------------------------------------------------------------------------------
+2. LATEST FOUNDRY GAS REPORT OUTPUT
+--------------------------------------------------------------------------------
+
+[PLEASE RUN THE FOLLOWING COMMAND IN YOUR WSL TERMINAL TO GENERATE THE REPORT:]
+$ forge test --gas-report
+
+[Replace this placeholder text with the output of the command above]
+No files changed, compilation skipped
+
+Ran 30 tests for test/MultiSigWallet.t.sol:MultiSigWalletTest
+[PASS] test_approveTransaction_emitsEvent() (gas: 200020)
+[PASS] test_approveTransaction_revertsForNonOwner() (gas: 149009)
+[PASS] test_approveTransaction_revertsOnAlreadyExecutedTx() (gas: 356282)
+[PASS] test_approveTransaction_revertsOnDoubleApproval() (gas: 230234)
+[PASS] test_approveTransaction_revertsOnNonExistentTx() (gas: 37254)
+[PASS] test_approveTransaction_updatesState() (gas: 229467)
+[PASS] test_constructor_revertsOnDuplicateOwner() (gas: 324786)
+[PASS] test_constructor_revertsOnEmptyOwners() (gas: 252929)
+[PASS] test_constructor_revertsOnInvalidRequiredApprovals() (gas: 517677)
+[PASS] test_constructor_revertsOnZeroAddress() (gas: 324165)
+[PASS] test_constructor_setsStateCorrectly() (gas: 74813)
+[PASS] test_executeTransaction_emitsEvent() (gas: 326477)
+[PASS] test_executeTransaction_executesCalldata() (gas: 422027)
+[PASS] test_executeTransaction_revertsForNonOwner() (gas: 286453)
+[PASS] test_executeTransaction_revertsOnAlreadyExecuted() (gas: 354434)
+[PASS] test_executeTransaction_revertsOnFailedCall() (gas: 349379)
+[PASS] test_executeTransaction_revertsOnInsufficientApprovals() (gas: 237690)
+[PASS] test_executeTransaction_revertsOnNonExistentTx() (gas: 37342)
+[PASS] test_executeTransaction_transfersEth() (gas: 376391)
+[PASS] test_fullHappyPath_endToEnd() (gas: 508378)
+[PASS] test_receive_acceptsEthAndEmitsDeposit() (gas: 44786)
+[PASS] test_revokeApproval_blocksExecutionUntilReApproved() (gas: 476988)
+[PASS] test_revokeApproval_decrementsCountAndUpdatesMapping() (gas: 255316)
+[PASS] test_revokeApproval_emitsEvent() (gas: 225913)
+[PASS] test_revokeApproval_revertsForNonOwner() (gas: 225468)
+[PASS] test_revokeApproval_revertsOnExecutedTx() (gas: 354412)
+[PASS] test_revokeApproval_revertsWhenNotApproved() (gas: 153876)
+[PASS] test_submitTransaction_emitsEvent() (gas: 212985)
+[PASS] test_submitTransaction_revertsForNonOwner() (gas: 39971)
+[PASS] test_submitTransaction_storesCorrectFields() (gas: 243282)
+Suite result: ok. 30 passed; 0 failed; 0 skipped; finished in 3.38ms (14.52ms CPU time)
+
+╭------------------------------------------------+-----------------+--------+--------+--------+---------╮
+| src/MultiSigWallet.sol:MultiSigWallet Contract |                 |        |        |        |         |
++=======================================================================================================+
+| Deployment Cost                                | Deployment Size |        |        |        |         |
+|------------------------------------------------+-----------------+--------+--------+--------+---------|
+| 1940340                                        | 9362            |        |        |        |         |
+|------------------------------------------------+-----------------+--------+--------+--------+---------|
+|                                                |                 |        |        |        |         |
+|------------------------------------------------+-----------------+--------+--------+--------+---------|
+| Function Name                                  | Min             | Avg    | Median | Max    | # Calls |
+|------------------------------------------------+-----------------+--------+--------+--------+---------|
+| approveTransaction                             | 23888           | 63043  | 74875  | 74875  | 32      |
+|------------------------------------------------+-----------------+--------+--------+--------+---------|
+| executeTransaction                             | 23975           | 62456  | 66817  | 122547 | 14      |
+|------------------------------------------------+-----------------+--------+--------+--------+---------|
+| getOwners                                      | 10497           | 10497  | 10497  | 10497  | 1       |
+|------------------------------------------------+-----------------+--------+--------+--------+---------|
+| getTransaction                                 | 17939           | 19755  | 17939  | 22481  | 5       |
+|------------------------------------------------+-----------------+--------+--------+--------+---------|
+| getTransactionCount                            | 2485            | 2485   | 2485   | 2485   | 2       |
+|------------------------------------------------+-----------------+--------+--------+--------+---------|
+| isApproved                                     | 3071            | 3071   | 3071   | 3071   | 2       |
+|------------------------------------------------+-----------------+--------+--------+--------+---------|
+| isOwner                                        | 2900            | 2900   | 2900   | 2900   | 4       |
+|------------------------------------------------+-----------------+--------+--------+--------+---------|
+| receive                                        | 22985           | 22985  | 22985  | 22985  | 1       |
+|------------------------------------------------+-----------------+--------+--------+--------+---------|
+| requiredApprovals                              | 2447            | 2447   | 2447   | 2447   | 1       |
+|------------------------------------------------+-----------------+--------+--------+--------+---------|
+| revokeApproval                                 | 23953           | 30708  | 31670  | 35931  | 6       |
+|------------------------------------------------+-----------------+--------+--------+--------+---------|
+| submitTransaction                              | 25934           | 120323 | 107640 | 192828 | 22      |
+╰------------------------------------------------+-----------------+--------+--------+--------+---------╯
+
+╭-----------------------------------------------+-----------------+------+--------+------+---------╮
+| test/MultiSigWallet.t.sol:MockTarget Contract |                 |      |        |      |         |
++==================================================================================================+
+| Deployment Cost                               | Deployment Size |      |        |      |         |
+|-----------------------------------------------+-----------------+------+--------+------+---------|
+| 184461                                        | 638             |      |        |      |         |
+|-----------------------------------------------+-----------------+------+--------+------+---------|
+|                                               |                 |      |        |      |         |
+|-----------------------------------------------+-----------------+------+--------+------+---------|
+| Function Name                                 | Min             | Avg  | Median | Max  | # Calls |
+|-----------------------------------------------+-----------------+------+--------+------+---------|
+| lastMsgValue                                  | 2425            | 2425 | 2425   | 2425 | 1       |
+|-----------------------------------------------+-----------------+------+--------+------+---------|
+| value                                         | 2402            | 2402 | 2402   | 2402 | 2       |
+╰-----------------------------------------------+-----------------+------+--------+------+---------╯
+
+
+Ran 1 test suite in 10.53ms (3.38ms CPU time): 30 tests passed, 0 failed, 0 skipped (30 total tests)

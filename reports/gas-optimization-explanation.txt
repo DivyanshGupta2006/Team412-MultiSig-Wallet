@@ -1,0 +1,97 @@
+================================================================================
+              GAS OPTIMIZATION CASE STUDY — MultiSigWallet
+================================================================================
+
+PROJECT: Multi-Signature Wallet (Team 412)
+CONTRACT: MultiSigWallet.sol (Solidity ^0.8.24)
+FRAMEWORK: Foundry (forge test --gas-report)
+
+================================================================================
+OPTIMIZATION FOCUS: Off-Chain Description Storage via IPFS
+================================================================================
+
+PROBLEM:
+  The original contract stored a full `string description` on-chain for each
+  transaction proposal. On-chain string storage is one of the most expensive
+  operations in the EVM — each 32-byte word costs ~20,000 gas for SSTORE (cold).
+  A typical multi-sentence proposal description (200+ characters) would consume
+  ~140,000+ gas just for the description storage alone.
+
+SOLUTION:
+  Replaced `string description` with `string descriptionURI` which stores only
+  a compact IPFS URI (e.g., "ipfs://QmXoYz...") of ~53 characters. The full
+  description text is stored off-chain on IPFS via Pinata. The frontend handles
+  uploading descriptions to IPFS before submitting transactions, and fetches
+  them from IPFS gateways when displaying.
+
+BEFORE (on-chain description — e.g., 200-char string):
+  - Storage: 7 storage slots (7 × 32 bytes = 224 bytes → 7 × 20,000 = 140,000 gas)
+  - Plus: ABI encoding + calldata cost for the full string
+  - submitTransaction gas (200-char desc): ~190,000+ gas
+
+AFTER (IPFS URI — fixed ~53-char string):
+  - Storage: 2 storage slots (2 × 32 bytes = 64 bytes → 2 × 20,000 = 40,000 gas)
+  - Plus: ABI encoding + calldata cost for the short URI
+  - submitTransaction gas (53-char URI): ~110,000 gas
+
+ESTIMATED SAVINGS:
+  - Storage gas saved per transaction: ~100,000 gas (71% reduction on desc storage)
+  - Savings scale linearly with description length — longer descriptions save more
+  - For a 500-char description: ~280,000 gas saved per transaction
+
+TRADE-OFFS:
+  - Descriptions are no longer visible directly on Etherscan (must follow IPFS link)
+  - Frontend depends on IPFS gateway availability (mitigated by multi-gateway fallback)
+  - IPFS pinning requires a Pinata account (free tier available)
+  - Content-addressed storage ensures data integrity (CID = hash of content)
+
+================================================================================
+OTHER GAS OPTIMIZATIONS APPLIED
+================================================================================
+
+1. `external` over `public`
+   - Applied to: All 7 externally-called functions
+   - Reason: external reads args directly from calldata; public copies to memory
+   - Saving: ~200-600 gas per call depending on argument types
+
+2. `calldata` over `memory` for function parameters
+   - Applied to: submitTransaction(_data, _descriptionURI)
+   - Reason: Avoids copying bytes/string from calldata to memory
+   - Saving: ~200+ gas per call, scales with data size
+
+3. `unchecked { ++i; }` in constructor loop
+   - Applied to: Owner array iteration
+   - Reason: i is bounded by ownerCount; overflow impossible
+   - Saving: ~50 gas per iteration (skips overflow check)
+
+4. `unchecked` arithmetic on approvalCount
+   - Applied to: approveTransaction (+1) and revokeApproval (-1)
+   - Reason: +1 bounded by owner count; -1 guarded by TxNotApproved check
+   - Saving: ~50 gas per approval/revocation
+
+5. Cached array length in constructor
+   - Applied to: uint256 ownerCount = _owners.length
+   - Reason: Avoids repeated MLOAD in loop condition
+   - Saving: ~3 gas per iteration
+
+6. Cached storage read in executeTransaction
+   - Applied to: uint256 _requiredApprovals = requiredApprovals
+   - Reason: Avoids duplicate SLOAD (2,100 gas each)
+   - Saving: ~2,100 gas per execution
+
+7. `storage` pointer for Transaction struct
+   - Applied to: All functions that read/modify transactions
+   - Reason: No struct copy to memory — reads/writes directly in storage
+   - Saving: Avoids ~500-2,000 gas per struct access depending on fields read
+
+8. O(1) owner lookup via mapping
+   - Applied to: mapping(address => bool) isOwner
+   - Reason: Avoids O(N) loop through owners[] array for every onlyOwner check
+   - Saving: ~200-2,000 gas depending on owner count (vs array iteration)
+
+9. Custom errors over require() strings
+   - Applied to: All 10 error conditions
+   - Reason: Custom errors use 4-byte selectors instead of storing revert strings
+   - Saving: ~3× gas reduction on reverts; cheaper deployment (less bytecode)
+
+================================================================================
